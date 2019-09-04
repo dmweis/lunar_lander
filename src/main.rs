@@ -60,13 +60,13 @@ impl State for Game {
     }
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
-        if window.keyboard()[Key::Left].is_down() {
+        if window.keyboard()[Key::Left].is_down() || window.keyboard()[Key::A].is_down(){
             self.angle = self.angle - 3;
         }
-        if window.keyboard()[Key::Right].is_down() {
+        if window.keyboard()[Key::Right].is_down() || window.keyboard()[Key::D].is_down() {
             self.angle = self.angle + 3;
         }
-        if window.keyboard()[Key::Up].is_down() {
+        if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
             self.velocity = self
                 .velocity
                 .translate(Transform::rotate(self.angle) * (Vector::new(0, -30) / 60.0));
