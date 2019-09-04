@@ -1,12 +1,8 @@
-// Demonstrate adding a View to the draw-geometry example
-// The camera can be controlled with the arrow keys
-use lazy_static;
 use quicksilver::{
-    combinators::result,
     geom::{Line, Rectangle, Shape, Transform, Vector},
     graphics::{
         Background::{Col, Img},
-        Color, Font, FontStyle, Image,
+        Color, Font, FontStyle,
     },
     input::Key,
     lifecycle::{run, Asset, Settings, State, Window},
@@ -21,10 +17,6 @@ struct Map {
 }
 
 impl Map {
-    fn new(points: Vec<Vector>) -> Map {
-        Map { points }
-    }
-
     fn get_lines(self) -> Vec<Line> {
         let mut lines: Vec<Line> = Vec::new();
         let mut last_point = self.points[0];
@@ -36,20 +28,8 @@ impl Map {
     }
 }
 
-// lazy_static::lazy_static! {
-//     static ref MAP: Vec<Line> = {
-//                 let payload = load_file("map.json").wait();
-//                 // let json_map = from_utf8(&payload).expect("second");
-//                 // let map: Map= serde_json::from_str(json_map).expect("third");
-//                 let map = Map::new(vec![Vector::new(0, 0), Vector::new(100, 100)]);
-//                 map.get_lines()
-//             };
-
-// }
-
 struct Game {
-    text_render_counter: u32,
-    text: Asset<Image>,
+    font: Asset<Font>,
     velocity: Vector,
     position: Vector,
     angle: i32,
@@ -59,11 +39,6 @@ struct Game {
 impl State for Game {
     // Initialize the struct
     fn new() -> Result<Game> {
-        let text = Asset::new(Font::load("font.ttf").and_then(|font| {
-            let style = FontStyle::new(20.0, Color::WHITE);
-            result(font.render("Velocity: fast", &style))
-        }));
-
         let map = Asset::new(load_file("map.json")
              .and_then(|payload| {
                  Ok(from_utf8(&payload).unwrap().to_owned())
@@ -73,9 +48,10 @@ impl State for Game {
                  Ok(map.get_lines())
              }));
 
+        let font = Asset::new(Font::load("font.ttf"));
+
         Ok(Game {
-            text_render_counter: 0,
-            text: text,
+            font: font,
             velocity: Vector::new(0, 0),
             position: Vector::new(400, 300),
             angle: 0,
@@ -98,18 +74,6 @@ impl State for Game {
         self.velocity = self.velocity.translate(Vector::new(0, 10) / 60.0);
         self.position = self.position.translate(self.velocity / 60.0);
 
-        let horizontal = self.velocity.x;
-        let vertical = self.velocity.y;
-        // render text
-        self.text_render_counter += 1;
-        if self.text_render_counter >= 30 {
-            self.text_render_counter = 0;
-            self.text = Asset::new(Font::load("font.ttf").and_then(move |font| {
-                let style = FontStyle::new(20.0, Color::WHITE);
-                let text = format!("Horizontal: {}\nVertical {}", horizontal, vertical);
-                result(font.render(&text, &style))
-            }));
-        }
         Ok(())
     }
 
@@ -133,8 +97,13 @@ impl State for Game {
             Transform::rotate(self.angle),
             10,
         );
-        self.text.execute(|image| {
-            window.draw(&image.area().with_center((600, 50)), Img(&image));
+        let horizontal = self.velocity.x;
+        let vertical = self.velocity.y;
+        self.font.execute(move |font| {
+            let style = FontStyle::new(20.0, Color::WHITE);
+            let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
+            let image = font.render(&text, &style).unwrap();
+            window.draw(&image.area().with_center((600, 100)), Img(&image));
             Ok(())
         })?;
         Ok(())
