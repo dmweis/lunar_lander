@@ -13,19 +13,31 @@ use serde::{Deserialize, Serialize};
 use std::str::from_utf8;
 
 #[derive(Serialize, Deserialize)]
-struct Map {
+struct MapMessage {
     points: Vec<Vector>,
 }
 
-impl Map {
-    fn get_lines(self) -> Vec<Line> {
+struct Map {
+    lines: Vec<Line>,
+}
+
+impl MapMessage {
+    fn extract_map(&mut self) -> Map {
         let mut lines: Vec<Line> = Vec::new();
         let mut last_point = self.points[0];
-        for point in self.points.into_iter().skip(1) {
-            lines.push(Line::new(last_point, point));
-            last_point = point;
+        for point in self.points.iter().skip(1) {
+            lines.push(Line::new(last_point.clone(), point.clone()));
+            last_point = point.clone();
         }
-        lines
+        Map{ lines }
+    }
+}
+
+impl Drawable for Map {
+    fn draw<'a>(&self, mesh: &mut Mesh, bkg: Background<'a>, trans: Transform, z: impl Scalar) {
+        for line in self.lines.iter() {
+                line.draw(mesh, bkg, trans, z);
+        }
     }
 }
 
@@ -89,7 +101,7 @@ impl Drawable for LunarModule {
 struct Game {
     font: Asset<Font>,
     lunar_module: LunarModule,
-    map: Asset<Vec<Line>>,
+    map: Asset<Map>,
 }
 
 impl State for Game {
@@ -100,8 +112,8 @@ impl State for Game {
                  Ok(from_utf8(&payload).unwrap().to_owned())
              })
              .and_then(|json_map| {
-                 let map: Map = serde_json::from_str(&json_map).unwrap();
-                 Ok(map.get_lines())
+                 let mut map_message: MapMessage = serde_json::from_str(&json_map).unwrap();
+                 Ok(map_message.extract_map())
              }));
 
         let font = Asset::new(Font::load("font.ttf"));
@@ -136,9 +148,7 @@ impl State for Game {
 
         self.map.execute(|map|{
             // draw map
-            for line in map.iter() {
-                window.draw(line, Col(Color::WHITE));
-            }
+            window.draw(map, Col(Color::WHITE));
             Ok(())
         })?;
         window.draw(&self.lunar_module, Color::WHITE);
