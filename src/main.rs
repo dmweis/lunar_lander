@@ -45,6 +45,14 @@ struct LunarModule {
     velocity: Vector,
     position: Vector,
     attitude: f32,
+    state: LunarModuleState
+}
+
+#[derive(PartialEq)]
+enum LunarModuleState {
+    Flying,
+    Crashed,
+    Landed
 }
 
 impl LunarModule {
@@ -53,6 +61,7 @@ impl LunarModule {
             velocity: Vector::new(0.0, 0.0),
             position,
             attitude: 0.0,
+            state: LunarModuleState::Flying,
         }
     }
 
@@ -68,6 +77,25 @@ impl LunarModule {
 
     fn tick_position(&mut self) {
         self.position = self.position.translate(self.velocity / 60.0);
+    }
+
+    fn check_collision(&mut self, map: &Map) {
+        let main_rect_top_left = self.position + Vector::new(-5, -5);
+        let main_rect = Rectangle::new(main_rect_top_left, Vector::new(10, 10));
+
+        for line in map.lines.iter() {
+            let colliding = main_rect.intersects(&line);
+            if colliding {
+                if line.a.y == line.b.y {
+                    self.state = LunarModuleState::Landed;
+                    return;
+                } else {
+                    self.state = LunarModuleState::Crashed;
+                    return;
+                }
+            }
+        }
+        self.state = LunarModuleState::Flying;
     }
 }
 
@@ -89,12 +117,18 @@ impl Drawable for LunarModule {
         let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(5, 5));
         let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(5, 5)));
 
-        main_rect.draw(mesh, bkg, Transform::rotate(self.attitude) * trans, z);
+        let color = match self.state {
+            LunarModuleState::Flying => bkg,
+            LunarModuleState::Landed => Col(Color::BLUE),
+            LunarModuleState::Crashed => Col(Color::RED),
+        };
+
+        main_rect.draw(mesh, color, Transform::rotate(self.attitude) * trans, z);
         black_rect.draw(mesh, Col(Color::BLACK), Transform::rotate(self.attitude) * trans, z);
-        top.draw(mesh, bkg, trans, z);
+        top.draw(mesh, color, trans, z);
         top_black.draw(mesh, Col(Color::BLACK), trans, z);
-        left_leg_base.draw(mesh, bkg, trans, z);
-        right_leg_base.draw(mesh, bkg, trans, z);
+        left_leg_base.draw(mesh, color, trans, z);
+        right_leg_base.draw(mesh, color, trans, z);
     }
 }
 
@@ -139,7 +173,16 @@ impl State for Game {
             self.lunar_module = LunarModule::new(Vector::new(400, 300))
         }
         self.lunar_module.apply_gravity();
-        self.lunar_module.tick_position();
+        let lunar_module_reference = &mut self.lunar_module;
+        self.map.execute(|map|{
+            // draw map
+            lunar_module_reference.check_collision(&map);
+            if lunar_module_reference.state == LunarModuleState::Flying {
+                lunar_module_reference.tick_position();
+            }
+            Ok(())
+        })?;
+        
         Ok(())
     }
 
@@ -151,6 +194,7 @@ impl State for Game {
             window.draw(map, Col(Color::WHITE));
             Ok(())
         })?;
+
         window.draw(&self.lunar_module, Color::WHITE);
         
         let horizontal = self.lunar_module.velocity.x;
