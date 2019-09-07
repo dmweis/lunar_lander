@@ -7,7 +7,7 @@ use quicksilver::{
     },
     input::Key,
     lifecycle::{run, Asset, Settings, State, Window},
-    load_file, Future, Result,
+    Result,
 };
 use serde::{Deserialize, Serialize};
 use std::str::from_utf8;
@@ -22,7 +22,7 @@ struct Map {
 }
 
 impl MapMessage {
-    fn extract_map(&mut self) -> Map {
+    fn extract_map(& self) -> Map {
         let mut lines: Vec<Line> = Vec::new();
         let mut last_point = self.points[0];
         for point in self.points.iter().skip(1) {
@@ -135,20 +135,17 @@ impl Drawable for LunarModule {
 struct Game {
     font: Asset<Font>,
     lunar_module: LunarModule,
-    map: Asset<Map>,
+    map: Map,
 }
 
 impl State for Game {
     // Initialize the struct
     fn new() -> Result<Game> {
-        let map = Asset::new(load_file("map.json")
-             .and_then(|payload| {
-                 Ok(from_utf8(&payload).unwrap().to_owned())
-             })
-             .and_then(|json_map| {
-                 let mut map_message: MapMessage = serde_json::from_str(&json_map).unwrap();
-                 Ok(map_message.extract_map())
-             }));
+        let map_payload = include_bytes!("map.json");
+        let map_json = from_utf8(map_payload).unwrap();
+        let map_message: MapMessage = serde_json::from_str(map_json).unwrap();
+        let map = map_message.extract_map();
+
 
         let font = Asset::new(Font::load("font.ttf"));
 
@@ -173,27 +170,19 @@ impl State for Game {
             self.lunar_module = LunarModule::new(Vector::new(400, 300))
         }
         self.lunar_module.apply_gravity();
-        let lunar_module_reference = &mut self.lunar_module;
-        self.map.execute(|map|{
-            // draw map
-            lunar_module_reference.check_collision(&map);
-            if lunar_module_reference.state == LunarModuleState::Flying {
-                lunar_module_reference.tick_position();
-            }
-            Ok(())
-        })?;
-        
+
+        self.lunar_module.check_collision(&self.map);
+        if self.lunar_module.state == LunarModuleState::Flying {
+                self.lunar_module.tick_position();
+        }
+    
         Ok(())
     }
 
     fn draw(&mut self, window: &mut Window) -> Result<()> {
         window.clear(Color::BLACK)?;
 
-        self.map.execute(|map|{
-            // draw map
-            window.draw(map, Col(Color::WHITE));
-            Ok(())
-        })?;
+        window.draw(&self.map, Col(Color::WHITE));
 
         window.draw(&self.lunar_module, Color::WHITE);
         
