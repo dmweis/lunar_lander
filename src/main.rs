@@ -70,9 +70,14 @@ impl LunarModule {
         }
     }
 
-    fn apply_thrust(&mut self) {
+    fn update_attitude(&mut self) {
         if self.state == LunarModuleState::Flying {
             self.attitude = self.desired_attitude;
+        }
+    }
+
+    fn apply_thrust(&mut self) {
+        if self.state == LunarModuleState::Flying {
             self.velocity = self
                     .velocity
                     .translate(Transform::rotate(self.attitude) * (Vector::new(0, -15) / 60.0));
@@ -186,6 +191,7 @@ impl State for Game {
         if window.keyboard()[Key::Right].is_down() || window.keyboard()[Key::D].is_down() {
             self.lunar_module.desired_attitude += 1.5;
         }
+        self.lunar_module.update_attitude();
         if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
             self.lunar_module.apply_thrust();
         }
