@@ -3,7 +3,7 @@ use quicksilver::{
     graphics::{
         Background::{Col, Img},
         Background,
-        Color, Font, FontStyle, Drawable, Mesh
+        Color, Font, FontStyle, Drawable, Mesh, View
     },
     input::{Key, ButtonState},
     lifecycle::{run, Asset, Settings, State, Window},
@@ -85,7 +85,7 @@ impl LunarModule {
         }
     }
 
-    fn reset_render(&mut self) {
+    fn disable_thrust(&mut self) {
         self.thruster_on = false;
     }
 
@@ -194,6 +194,8 @@ impl State for Game {
         self.lunar_module.update_attitude();
         if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
             self.lunar_module.apply_thrust();
+        } else {
+            self.lunar_module.disable_thrust();
         }
         if window.keyboard()[Key::Space].is_down() {
             self.lunar_module = LunarModule::new(Vector::new(400, 300))
@@ -206,6 +208,26 @@ impl State for Game {
                 self.lunar_module.tick_position();
         }
     
+
+        let top_left = self.lunar_module.position - Vector::new(50, 50);
+        let detailed_view_rectangle = Rectangle::new(top_left, Vector::new(100, 100));
+        let mut detailed_view_needed = false;
+        for line in self.map.lines.iter() {
+            if detailed_view_rectangle.overlaps(line) {
+                let new_view = View::new(detailed_view_rectangle);
+                window.set_view(new_view);
+                detailed_view_needed = true;
+                break;
+            }
+        }
+
+        if !detailed_view_needed {
+            let screen_size = window.screen_size();
+            let view_rectangle = Rectangle::new(Vector::new(0, 0), screen_size);
+            let new_view = View::new(view_rectangle);
+            window.set_view(new_view);
+        }
+
         Ok(())
     }
 
@@ -215,7 +237,6 @@ impl State for Game {
         window.draw(&self.map, Col(Color::WHITE));
 
         window.draw(&self.lunar_module, Color::WHITE);
-        self.lunar_module.reset_render();
         
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
