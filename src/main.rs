@@ -45,6 +45,7 @@ struct LunarModule {
     velocity: Vector,
     position: Vector,
     attitude: f32,
+    desired_attitude: f32,
     state: LunarModuleState
 }
 
@@ -61,6 +62,7 @@ impl LunarModule {
             velocity: Vector::new(0.0, 0.0),
             position,
             attitude: 0.0,
+            desired_attitude: 0.0,
             state: LunarModuleState::Flying,
         }
     }
@@ -68,25 +70,29 @@ impl LunarModule {
     fn apply_thrust(&mut self) {
         self.velocity = self
                 .velocity
-                .translate(Transform::rotate(self.attitude) * (Vector::new(0, -30) / 60.0));
-    }
-
-    fn apply_gravity(&mut self) {
-        self.velocity = self.velocity.translate(Vector::new(0, 10) / 60.0);
+                .translate(Transform::rotate(self.attitude) * (Vector::new(0, -15) / 60.0));
     }
 
     fn tick_position(&mut self) {
+        self.velocity = self.velocity.translate(Vector::new(0, 5) / 60.0);
+        self.attitude = self.desired_attitude;
         self.position = self.position.translate(self.velocity / 60.0);
     }
 
     fn check_collision(&mut self, map: &Map) {
-        let main_rect_top_left = self.position + Vector::new(-5, -5);
-        let main_rect = Rectangle::new(main_rect_top_left, Vector::new(10, 10));
+        let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 4);
+        let main_rect = Rectangle::new(self.position + Vector::new(-5, -2), Vector::new(10, 4));
+        let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
+        let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2)));
+
+        let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
+        let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
+
 
         for line in map.lines.iter() {
-            let colliding = main_rect.intersects(&line);
+            let colliding = top.intersects(&line) || main_rect.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
             if colliding {
-                if line.a.y == line.b.y {
+                if line.a.y == line.b.y && self.velocity.len() < 20.0 && self.attitude.abs() < 5.0 {
                     self.state = LunarModuleState::Landed;
                     return;
                 } else {
@@ -101,21 +107,19 @@ impl LunarModule {
 
 impl Drawable for LunarModule {
     fn draw<'a>(&self, mesh: &mut Mesh, bkg: Background<'a>, trans: Transform, z: impl Scalar) {
-        let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -10)), 5);
-        let top_black = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -10)), 4);
+        let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 4);
+        let top_black = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 3);
 
-        let main_rect_top_left = self.position + Vector::new(-5, -5);
-        let main_rect = Rectangle::new(main_rect_top_left, Vector::new(10, 10));
-        let black_rect_top_left = self.position + Vector::new(-4, -4);
-        let black_rect = Rectangle::new(black_rect_top_left, Vector::new(8, 8));
+        let main_rect = Rectangle::new(self.position + Vector::new(-5, -2), Vector::new(10, 4));
+        let black_rect = Rectangle::new(self.position + Vector::new(-4, -1), Vector::new(8, 2));
 
         // feet
 
-        let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-5, 5));
-        let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-5, 5)));
+        let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
+        let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2)));
 
-        let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(5, 5));
-        let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(5, 5)));
+        let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
+        let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
 
         let color = match self.state {
             LunarModuleState::Flying => bkg,
@@ -158,10 +162,10 @@ impl State for Game {
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
         if window.keyboard()[Key::Left].is_down() || window.keyboard()[Key::A].is_down(){
-            self.lunar_module.attitude -= 3.0;
+            self.lunar_module.desired_attitude -= 3.0;
         }
         if window.keyboard()[Key::Right].is_down() || window.keyboard()[Key::D].is_down() {
-            self.lunar_module.attitude += 3.0;
+            self.lunar_module.desired_attitude += 3.0;
         }
         if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
             self.lunar_module.apply_thrust();
@@ -169,7 +173,6 @@ impl State for Game {
         if window.keyboard()[Key::Space].is_down() {
             self.lunar_module = LunarModule::new(Vector::new(400, 300))
         }
-        self.lunar_module.apply_gravity();
 
         self.lunar_module.check_collision(&self.map);
         if self.lunar_module.state == LunarModuleState::Flying {
