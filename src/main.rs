@@ -11,6 +11,7 @@ use quicksilver::{
 };
 use serde::{Deserialize, Serialize};
 use std::str::from_utf8;
+use rand;
 
 #[derive(Serialize, Deserialize)]
 struct MapMessage {
@@ -46,7 +47,8 @@ struct LunarModule {
     position: Vector,
     attitude: f32,
     desired_attitude: f32,
-    state: LunarModuleState
+    state: LunarModuleState,
+    thruster_on: bool,
 }
 
 #[derive(PartialEq)]
@@ -64,18 +66,27 @@ impl LunarModule {
             attitude: 0.0,
             desired_attitude: 0.0,
             state: LunarModuleState::Flying,
+            thruster_on: false,
         }
     }
 
     fn apply_thrust(&mut self) {
-        self.velocity = self
-                .velocity
-                .translate(Transform::rotate(self.attitude) * (Vector::new(0, -15) / 60.0));
+        if self.state == LunarModuleState::Flying {
+            self.attitude = self.desired_attitude;
+            self.velocity = self
+                    .velocity
+                    .translate(Transform::rotate(self.attitude) * (Vector::new(0, -15) / 60.0));
+            self.thruster_on = true;
+        }
+    }
+
+    fn reset_render(&mut self) {
+        self.thruster_on = false;
     }
 
     fn tick_position(&mut self) {
+        // gravity
         self.velocity = self.velocity.translate(Vector::new(0, 5) / 60.0);
-        self.attitude = self.desired_attitude;
         self.position = self.position.translate(self.velocity / 60.0);
     }
 
@@ -123,7 +134,7 @@ impl Drawable for LunarModule {
 
         let color = match self.state {
             LunarModuleState::Flying => bkg,
-            LunarModuleState::Landed => Col(Color::BLUE),
+            LunarModuleState::Landed => Col(Color::GREEN),
             LunarModuleState::Crashed => Col(Color::RED),
         };
 
@@ -133,6 +144,15 @@ impl Drawable for LunarModule {
         top_black.draw(mesh, Col(Color::BLACK), trans, z);
         left_leg_base.draw(mesh, color, trans, z);
         right_leg_base.draw(mesh, color, trans, z);
+
+        if self.thruster_on {
+            // Fire
+            let fire_dis = Transform::rotate(self.attitude) * Vector::new(-2.0 + rand::random::<f32>() * 4.0, 17.0 + rand::random::<f32>() * 4.0);
+            let left_fire = Line::new(bottom_left, fire_dis + self.position);
+            let right_fire = Line::new(bottom_right, fire_dis + self.position);
+            left_fire.draw(mesh, Col(Color::RED), trans, z);
+            right_fire.draw(mesh, Col(Color::RED), trans, z);
+        }
     }
 }
 
@@ -150,7 +170,6 @@ impl State for Game {
         let map_message: MapMessage = serde_json::from_str(map_json).unwrap();
         let map = map_message.extract_map();
 
-
         let font = Asset::new(Font::load("font.ttf"));
 
         Ok(Game {
@@ -162,10 +181,10 @@ impl State for Game {
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
         if window.keyboard()[Key::Left].is_down() || window.keyboard()[Key::A].is_down(){
-            self.lunar_module.desired_attitude -= 3.0;
+            self.lunar_module.desired_attitude -= 1.5;
         }
         if window.keyboard()[Key::Right].is_down() || window.keyboard()[Key::D].is_down() {
-            self.lunar_module.desired_attitude += 3.0;
+            self.lunar_module.desired_attitude += 1.5;
         }
         if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
             self.lunar_module.apply_thrust();
@@ -188,6 +207,7 @@ impl State for Game {
         window.draw(&self.map, Col(Color::WHITE));
 
         window.draw(&self.lunar_module, Color::WHITE);
+        self.lunar_module.reset_render();
         
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
@@ -198,6 +218,7 @@ impl State for Game {
             window.draw(&image.area().with_center((600, 100)), Img(&image));
             Ok(())
         })?;
+
         Ok(())
     }
 }
