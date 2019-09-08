@@ -51,11 +51,16 @@ struct LunarModule {
     thruster_on: bool,
 }
 
-#[derive(PartialEq)]
 enum LunarModuleState {
     Flying,
-    Crashed,
-    Landed
+    Landed,
+    Crashed(CrashReason),
+}
+
+enum CrashReason {
+    AngleTooSteep(f32),
+    VelocityTooHigh(Vector),
+    SurfaceNotFlat(Line),
 }
 
 impl LunarModule {
@@ -71,13 +76,13 @@ impl LunarModule {
     }
 
     fn update_attitude(&mut self) {
-        if self.state == LunarModuleState::Flying {
+        if let LunarModuleState::Flying = self.state {
             self.attitude = self.desired_attitude;
         }
     }
 
     fn apply_thrust(&mut self) {
-        if self.state == LunarModuleState::Flying {
+        if let LunarModuleState::Flying = self.state {
             self.velocity = self
                     .velocity
                     .translate(Transform::rotate(self.attitude) * (Vector::new(0, -15) / 60.0));
@@ -112,7 +117,13 @@ impl LunarModule {
                     self.state = LunarModuleState::Landed;
                     return;
                 } else {
-                    self.state = LunarModuleState::Crashed;
+                    if line.a.y != line.b.y {
+                        self.state = LunarModuleState::Crashed(CrashReason::SurfaceNotFlat(line.clone()));
+                    } else if self.velocity.len() > 20.0 {
+                        self.state = LunarModuleState::Crashed(CrashReason::VelocityTooHigh(self.velocity.clone()));
+                    } else if self.attitude.abs() > 15.0 {
+                        self.state = LunarModuleState::Crashed(CrashReason::AngleTooSteep(self.attitude));
+                    }
                     return;
                 }
             }
@@ -140,7 +151,7 @@ impl Drawable for LunarModule {
         let color = match self.state {
             LunarModuleState::Flying => bkg,
             LunarModuleState::Landed => Col(Color::GREEN),
-            LunarModuleState::Crashed => Col(Color::RED),
+            LunarModuleState::Crashed(_) => Col(Color::RED),
         };
 
         main_rect.draw(mesh, color, Transform::rotate(self.attitude) * trans, z);
@@ -204,10 +215,9 @@ impl State for Game {
             window.set_fullscreen(!window.get_fullscreen());
         }
         self.lunar_module.check_collision(&self.map);
-        if self.lunar_module.state == LunarModuleState::Flying {
+        if let LunarModuleState::Flying = self.lunar_module.state {
                 self.lunar_module.tick_position();
         }
-    
 
         let top_left = self.lunar_module.position - Vector::new(50, 50);
         let detailed_view_rectangle = Rectangle::new(top_left, Vector::new(100, 100));
@@ -244,6 +254,7 @@ impl State for Game {
             let style = FontStyle::new(20.0, Color::WHITE);
             let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
             let image = font.render(&text, &style).unwrap();
+
             window.draw(&image.area().with_center((600, 100)), Img(&image));
             Ok(())
         })?;
