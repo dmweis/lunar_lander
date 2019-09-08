@@ -117,6 +117,7 @@ impl LunarModule {
                     self.state = LunarModuleState::Landed;
                     return;
                 } else {
+                    self.disable_thrust();
                     if line.a.y != line.b.y {
                         self.state = LunarModuleState::Crashed(CrashReason::SurfaceNotFlat(line.clone()));
                     } else if self.velocity.len() > 20.0 {
@@ -176,6 +177,7 @@ struct Game {
     font: Asset<Font>,
     lunar_module: LunarModule,
     map: Map,
+    view_rectangle: Option<Rectangle>,
 }
 
 impl State for Game {
@@ -192,6 +194,7 @@ impl State for Game {
             font: font,
             lunar_module: LunarModule::new(Vector::new(400, 300)),
             map: map,
+            view_rectangle: None,
         })
     }
 
@@ -224,6 +227,7 @@ impl State for Game {
         let mut detailed_view_needed = false;
         for line in self.map.lines.iter() {
             if detailed_view_rectangle.overlaps(line) {
+                self.view_rectangle = Some(detailed_view_rectangle);
                 let new_view = View::new(detailed_view_rectangle);
                 window.set_view(new_view);
                 detailed_view_needed = true;
@@ -232,6 +236,7 @@ impl State for Game {
         }
 
         if !detailed_view_needed {
+            self.view_rectangle = None;
             let screen_size = window.screen_size();
             let view_rectangle = Rectangle::new(Vector::new(0, 0), screen_size);
             let new_view = View::new(view_rectangle);
@@ -250,12 +255,25 @@ impl State for Game {
         
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
+        let text_point = match self.view_rectangle {
+            None => Vector::new(600, 100),
+            Some(rectangle) => {
+                rectangle.top_left() + Vector::new( rectangle.size().x * 0.8, rectangle.size().y / 10.0)
+            }
+        };
+        let scale = match self.view_rectangle {
+            None => false,
+            Some(_) => true,
+        };
         self.font.execute(move |font| {
             let style = FontStyle::new(20.0, Color::WHITE);
             let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
             let image = font.render(&text, &style).unwrap();
-
-            window.draw(&image.area().with_center((600, 100)), Img(&image));
+            if scale {
+                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.25, 0.25)), 10);
+            } else {
+                window.draw(&image.area().with_center(text_point), Img(&image));
+            }
             Ok(())
         })?;
 
