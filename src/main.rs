@@ -108,7 +108,7 @@ impl LunarModule {
         for line in map.lines.iter() {
             let colliding = top.intersects(&line) || main_rect.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
             if colliding {
-                if line.a.y == line.b.y && self.velocity.len() < 20.0 && self.attitude.abs() < 5.0 {
+                if line.a.y == line.b.y && self.velocity.len() < 20.0 && self.attitude.abs() < 15.0 {
                     self.state = LunarModuleState::Landed;
                     return;
                 } else {
