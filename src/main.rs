@@ -5,7 +5,7 @@ use quicksilver::{
         Background,
         Color, Font, FontStyle, Drawable, Mesh
     },
-    input::Key,
+    input::{Key, ButtonState},
     lifecycle::{run, Asset, Settings, State, Window},
     Result,
 };
@@ -198,7 +198,9 @@ impl State for Game {
         if window.keyboard()[Key::Space].is_down() {
             self.lunar_module = LunarModule::new(Vector::new(400, 300))
         }
-
+        if window.keyboard()[Key::F] == ButtonState::Pressed {
+            window.set_fullscreen(!window.get_fullscreen());
+        }
         self.lunar_module.check_collision(&self.map);
         if self.lunar_module.state == LunarModuleState::Flying {
                 self.lunar_module.tick_position();
