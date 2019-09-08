@@ -186,10 +186,10 @@ impl State for Game {
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
         if window.keyboard()[Key::Left].is_down() || window.keyboard()[Key::A].is_down(){
-            self.lunar_module.desired_attitude -= 1.5;
+            self.lunar_module.desired_attitude -= 2.5;
         }
         if window.keyboard()[Key::Right].is_down() || window.keyboard()[Key::D].is_down() {
-            self.lunar_module.desired_attitude += 1.5;
+            self.lunar_module.desired_attitude += 2.5;
         }
         self.lunar_module.update_attitude();
         if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
