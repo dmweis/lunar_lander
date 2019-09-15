@@ -124,7 +124,7 @@ impl LunarModule {
                         self.state = LunarModuleState::Crashed(CrashReason::SurfaceNotFlat(line.clone()));
                     } else if self.velocity.len() > 20.0 {
                         self.state = LunarModuleState::Crashed(CrashReason::VelocityTooHigh(self.velocity.clone()));
-                    } else if self.attitude.abs() > 15.0 {
+                    } else if self.attitude > 15.0 || self.attitude < 350.0 {
                         self.state = LunarModuleState::Crashed(CrashReason::AngleTooSteep(self.attitude));
                     }
                     return;
