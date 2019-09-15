@@ -287,7 +287,7 @@ impl State for Game {
                 let style = FontStyle::new(40.0, Color::RED);
                 let text = match reason {
                     CrashReason::AngleTooSteep(angle) => format!("Angle too steep: {:.0}", angle),
-                    CrashReason::VelocityTooHigh(vector) => format!("Velocity too high: {}", vector),
+                    CrashReason::VelocityTooHigh(vector) => format!("Velocity too high: {:.1}", vector.len()),
                     CrashReason::SurfaceNotFlat(_) => format!("Surface not flat"),
                 };
                 let image = font.render(&text, &style).unwrap();
