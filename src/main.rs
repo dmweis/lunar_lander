@@ -181,6 +181,7 @@ struct Game {
     lunar_module: LunarModule,
     map: Map,
     view_rectangle: Option<Rectangle>,
+    fullscreen: bool,
 }
 
 impl State for Game {
@@ -198,10 +199,14 @@ impl State for Game {
             lunar_module: LunarModule::new(Vector::new(400, 300)),
             map: map,
             view_rectangle: None,
+            fullscreen: true,
         })
     }
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
+        if window.get_fullscreen() != self.fullscreen {
+            window.set_fullscreen(self.fullscreen);
+        }
         if window.keyboard()[Key::Left].is_down() || window.keyboard()[Key::A].is_down(){
             self.lunar_module.desired_attitude -= 2.5;
         }
@@ -218,15 +223,15 @@ impl State for Game {
             self.lunar_module = LunarModule::new(Vector::new(400, 300))
         }
         if window.keyboard()[Key::F] == ButtonState::Pressed {
-            window.set_fullscreen(!window.get_fullscreen());
+            self.fullscreen = !self.fullscreen;
         }
         self.lunar_module.check_collision(&self.map);
         if let LunarModuleState::Flying = self.lunar_module.state {
                 self.lunar_module.tick_position();
         }
 
-        let top_left = self.lunar_module.position - Vector::new(50, 50);
-        let detailed_view_rectangle = Rectangle::new(top_left, Vector::new(100, 100));
+        let top_left = self.lunar_module.position - Vector::new(100, 100);
+        let detailed_view_rectangle = Rectangle::new(top_left, Vector::new(200, 200));
         let mut detailed_view_needed = false;
         for line in self.map.lines.iter() {
             if detailed_view_rectangle.overlaps(line) {
