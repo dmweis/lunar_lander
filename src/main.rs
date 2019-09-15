@@ -255,21 +255,21 @@ impl State for Game {
         
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
-        let text_point = match self.view_rectangle {
-            None => Vector::new(600, 100),
-            Some(rectangle) => {
-                rectangle.top_left() + Vector::new( rectangle.size().x * 0.8, rectangle.size().y / 10.0)
-            }
-        };
-        let scale = match self.view_rectangle {
+        let zoomed = match self.view_rectangle {
             None => false,
             Some(_) => true,
         };
+        let view_rectangle = match self.view_rectangle {
+            None => Rectangle::new(Vector::new(0, 0), window.screen_size()),
+            Some(rectangle) => rectangle,
+        };
+        
         self.font.execute(move |font| {
             let style = FontStyle::new(20.0, Color::WHITE);
             let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
             let image = font.render(&text, &style).unwrap();
-            if scale {
+            let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.8, view_rectangle.size().y / 10.0);
+            if zoomed {
                 window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.25, 0.25)), 10);
             } else {
                 window.draw(&image.area().with_center(text_point), Img(&image));
