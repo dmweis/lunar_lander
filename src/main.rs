@@ -27,6 +27,7 @@ impl MapMessage {
         let mut lines: Vec<Line> = Vec::new();
         let mut last_point = self.points[0];
         for point in self.points.iter().skip(1) {
+            let point  = Vector::new(point.x * 2.5, point.y * 1.5);
             lines.push(Line::new(last_point.clone(), point.clone()));
             last_point = point.clone();
         }
