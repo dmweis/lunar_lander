@@ -51,12 +51,14 @@ struct LunarModule {
     thruster_on: bool,
 }
 
+#[derive(Clone)]
 enum LunarModuleState {
     Flying,
     Landed,
     Crashed(CrashReason),
 }
 
+#[derive(Clone)]
 enum CrashReason {
     AngleTooSteep(f32),
     VelocityTooHigh(Vector),
@@ -113,7 +115,7 @@ impl LunarModule {
         for line in map.lines.iter() {
             let colliding = top.intersects(&line) || main_rect.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
             if colliding {
-                if line.a.y == line.b.y && self.velocity.len() < 20.0 && self.attitude.abs() < 15.0 {
+                if line.a.y == line.b.y && self.velocity.len() < 20.0 && (self.attitude < 15.0 || self.attitude > 350.0) {
                     self.state = LunarModuleState::Landed;
                     return;
                 } else {
@@ -255,6 +257,7 @@ impl State for Game {
         
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
+        let game_state = self.lunar_module.state.clone();
         let zoomed = match self.view_rectangle {
             None => false,
             Some(_) => true,
@@ -263,16 +266,27 @@ impl State for Game {
             None => Rectangle::new(Vector::new(0, 0), window.screen_size()),
             Some(rectangle) => rectangle,
         };
-        
+
         self.font.execute(move |font| {
-            let style = FontStyle::new(20.0, Color::WHITE);
+            let style = FontStyle::new(40.0, Color::WHITE);
             let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
             let image = font.render(&text, &style).unwrap();
             let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.8, view_rectangle.size().y / 10.0);
             if zoomed {
-                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.25, 0.25)), 10);
+                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.125, 0.125)), 10);
             } else {
-                window.draw(&image.area().with_center(text_point), Img(&image));
+                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.5, 0.5)), 10);
+            }
+            if let LunarModuleState::Crashed(reason) = game_state {
+                let style = FontStyle::new(40.0, Color::RED);
+                let text = match reason {
+                    CrashReason::AngleTooSteep(angle) => format!("Angle too steep: {:.0}", angle),
+                    CrashReason::VelocityTooHigh(vector) => format!("Velocity too high: {}", vector),
+                    CrashReason::SurfaceNotFlat(_) => format!("Surface not flat"),
+                };
+                let image = font.render(&text, &style).unwrap();
+                let screen_middle =  view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.3);
+                window.draw_ex(&image.area().with_center(screen_middle), Img(&image), Transform::scale(Vector::new(0.125, 0.125)), 10);
             }
             Ok(())
         })?;
