@@ -284,14 +284,14 @@ impl State for Game {
                 window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.5, 0.5)), 10);
             }
             if let LunarModuleState::Crashed(reason) = game_state {
-                let style = FontStyle::new(40.0, Color::RED);
+                let style = FontStyle::new(60.0, Color::RED);
                 let text = match reason {
                     CrashReason::AngleTooSteep(angle) => format!("Angle too steep: {:.0}", angle),
                     CrashReason::VelocityTooHigh(vector) => format!("Velocity too high: {:.1}", vector.len()),
                     CrashReason::SurfaceNotFlat(_) => format!("Surface not flat"),
                 };
                 let image = font.render(&text, &style).unwrap();
-                let screen_middle =  view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.3);
+                let screen_middle =  view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.25);
                 window.draw_ex(&image.area().with_center(screen_middle), Img(&image), Transform::scale(Vector::new(0.125, 0.125)), 10);
             }
             Ok(())
