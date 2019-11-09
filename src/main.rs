@@ -67,15 +67,24 @@ enum CrashReason {
 }
 
 impl LunarModule {
-    fn new(position: Vector) -> LunarModule {
+    fn new() -> LunarModule {
         LunarModule {
             velocity: Vector::new(30.0, 0.0),
-            position,
-            attitude: 0.0,
+            position: Vector::new(400, 300),
+            attitude: 90.0,
             desired_attitude: 90.0,
             state: LunarModuleState::Flying,
             thruster_on: true,
         }
+    }
+
+    fn reset(&mut self) {
+        self.velocity = Vector::new(30.0, 0.0);
+        self.position = Vector::new(400, 300);
+        self.attitude = 90.0;
+        self.desired_attitude = 90.0;
+        self.state = LunarModuleState::Flying;
+        self.thruster_on = true;
     }
 
     fn update_attitude(&mut self) {
@@ -181,6 +190,7 @@ struct Game {
     map: Map,
     view_rectangle: Option<Rectangle>,
     fullscreen: bool,
+    started: bool
 }
 
 impl State for Game {
@@ -195,10 +205,11 @@ impl State for Game {
 
         Ok(Game {
             font: font,
-            lunar_module: LunarModule::new(Vector::new(400, 300)),
+            lunar_module: LunarModule::new(),
             map: map,
             view_rectangle: None,
             fullscreen: false,
+            started: false,
         })
     }
 
@@ -206,27 +217,37 @@ impl State for Game {
         if window.get_fullscreen() != self.fullscreen {
             window.set_fullscreen(self.fullscreen);
         }
-        if window.keyboard()[Key::Left].is_down() || window.keyboard()[Key::A].is_down(){
-            self.lunar_module.desired_attitude -= 2.5;
-        }
-        if window.keyboard()[Key::Right].is_down() || window.keyboard()[Key::D].is_down() {
-            self.lunar_module.desired_attitude += 2.5;
-        }
-        self.lunar_module.update_attitude();
-        if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
-            self.lunar_module.apply_thrust();
+        if !self.started {
+            if window.keyboard()[Key::Space].is_down() {
+                self.started = true;
+            }
         } else {
-            self.lunar_module.disable_thrust();
-        }
-        if window.keyboard()[Key::Space].is_down() {
-            self.lunar_module = LunarModule::new(Vector::new(400, 300))
-        }
-        if window.keyboard()[Key::F] == ButtonState::Pressed {
-            self.fullscreen = !self.fullscreen;
-        }
-        self.lunar_module.check_collision(&self.map);
-        if let LunarModuleState::Flying = self.lunar_module.state {
-                self.lunar_module.tick_position();
+            if window.keyboard()[Key::Escape].is_down(){
+                self.lunar_module.reset();
+                self.started = false;
+            }
+            if window.keyboard()[Key::Left].is_down() || window.keyboard()[Key::A].is_down(){
+                self.lunar_module.desired_attitude -= 2.5;
+            }
+            if window.keyboard()[Key::Right].is_down() || window.keyboard()[Key::D].is_down() {
+                self.lunar_module.desired_attitude += 2.5;
+            }
+            self.lunar_module.update_attitude();
+            if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
+                self.lunar_module.apply_thrust();
+            } else {
+                self.lunar_module.disable_thrust();
+            }
+            if window.keyboard()[Key::Space].is_down() {
+                self.lunar_module.reset();
+            }
+            if window.keyboard()[Key::F] == ButtonState::Pressed {
+                self.fullscreen = !self.fullscreen;
+            }
+            self.lunar_module.check_collision(&self.map);
+            if let LunarModuleState::Flying = self.lunar_module.state {
+                    self.lunar_module.tick_position();
+            }
         }
 
         let top_left = self.lunar_module.position - Vector::new(300, 100);
@@ -264,6 +285,7 @@ impl State for Game {
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
         let game_state = self.lunar_module.state.clone();
+        let started = self.started;
         let zoomed = match self.view_rectangle {
             None => false,
             Some(_) => true,
@@ -274,6 +296,14 @@ impl State for Game {
         };
 
         self.font.execute(move |font| {
+            if !started {
+                let style = FontStyle::new(60.0, Color::WHITE);
+                let text = "Welcome!\nUse WASD or arrow keys to control\nPress Space to star game";
+                let image = font.render(&text, &style).unwrap();
+                let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.2);
+                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.5, 0.5)), 10);
+            }
+
             let style = FontStyle::new(60.0, Color::WHITE);
             let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
             let image = font.render(&text, &style).unwrap();
@@ -284,6 +314,13 @@ impl State for Game {
                 window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.5, 0.5)), 10);
             }
             if let LunarModuleState::Crashed(reason) = game_state {
+                // Draw info screen
+                let style = FontStyle::new(60.0, Color::WHITE);
+                let text = "Game Over!\nUse WASD or arrow keys to control\nPress Space to restart game";
+                let image = font.render(&text, &style).unwrap();
+                let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.1);
+                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.2, 0.2)), 10);
+                // draw crash reason
                 let style = FontStyle::new(60.0, Color::RED);
                 let text = match reason {
                     CrashReason::AngleTooSteep(angle) => format!("Angle too steep: {:.0}", angle),
