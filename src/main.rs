@@ -69,7 +69,7 @@ enum CrashReason {
 impl LunarModule {
     fn new() -> LunarModule {
         LunarModule {
-            velocity: Vector::new(30.0, 0.0),
+            velocity: Vector::new(20.0 + rand::random::<f32>() * 20.0, 0.0),
             position: Vector::new(400, 300),
             attitude: 90.0,
             desired_attitude: 90.0,
@@ -79,7 +79,7 @@ impl LunarModule {
     }
 
     fn reset(&mut self) {
-        self.velocity = Vector::new(30.0, 0.0);
+        self.velocity = Vector::new(20.0 + rand::random::<f32>() * 20.0, 0.0);
         self.position = Vector::new(400, 300);
         self.attitude = 90.0;
         self.desired_attitude = 90.0;
