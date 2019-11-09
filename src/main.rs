@@ -3,7 +3,7 @@ use quicksilver::{
     graphics::{
         Background::{Col, Img},
         Background,
-        Color, Font, FontStyle, Drawable, Mesh, View
+        Color, Font, FontStyle, Drawable, Mesh, View, ResizeStrategy,
     },
     input::{Key, ButtonState},
     lifecycle::{run, Asset, Settings, State, Window},
@@ -27,7 +27,7 @@ impl MapMessage {
         let mut lines: Vec<Line> = Vec::new();
         let mut last_point = self.points[0];
         for point in self.points.iter().skip(1) {
-            let point  = Vector::new(point.x * 2.5, point.y * 1.5);
+            let point  = point;
             lines.push(Line::new(last_point.clone(), point.clone()));
             last_point = point.clone();
         }
@@ -69,12 +69,12 @@ enum CrashReason {
 impl LunarModule {
     fn new(position: Vector) -> LunarModule {
         LunarModule {
-            velocity: Vector::new(0.0, 0.0),
+            velocity: Vector::new(30.0, 0.0),
             position,
             attitude: 0.0,
-            desired_attitude: 0.0,
+            desired_attitude: 90.0,
             state: LunarModuleState::Flying,
-            thruster_on: false,
+            thruster_on: true,
         }
     }
 
@@ -111,7 +111,6 @@ impl LunarModule {
 
         let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
         let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
-
 
         for line in map.lines.iter() {
             let colliding = top.intersects(&line) || main_rect.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
@@ -167,7 +166,7 @@ impl Drawable for LunarModule {
 
         if self.thruster_on {
             // Fire
-            let fire_dis = Transform::rotate(self.attitude) * Vector::new(-2.0 + rand::random::<f32>() * 4.0, 17.0 + rand::random::<f32>() * 4.0);
+            let fire_dis = Transform::rotate(self.attitude) * Vector::new(0.0, 17.0 + rand::random::<f32>() * 6.0);
             let left_fire = Line::new(bottom_left, fire_dis + self.position);
             let right_fire = Line::new(bottom_right, fire_dis + self.position);
             left_fire.draw(mesh, Col(Color::RED), trans, z);
@@ -199,7 +198,7 @@ impl State for Game {
             lunar_module: LunarModule::new(Vector::new(400, 300)),
             map: map,
             view_rectangle: None,
-            fullscreen: true,
+            fullscreen: false,
         })
     }
 
@@ -230,11 +229,12 @@ impl State for Game {
                 self.lunar_module.tick_position();
         }
 
-        let top_left = self.lunar_module.position - Vector::new(100, 100);
-        let detailed_view_rectangle = Rectangle::new(top_left, Vector::new(200, 200));
+        let top_left = self.lunar_module.position - Vector::new(300, 100);
+        let detailed_view_checker = Rectangle::new(top_left, Vector::new(400, 200));
+        let detailed_view_rectangle = Rectangle::new(top_left, Vector::new(600, 300));
         let mut detailed_view_needed = false;
         for line in self.map.lines.iter() {
-            if detailed_view_rectangle.overlaps(line) {
+            if detailed_view_checker.overlaps(line) {
                 self.view_rectangle = Some(detailed_view_rectangle);
                 let new_view = View::new(detailed_view_rectangle);
                 window.set_view(new_view);
@@ -274,7 +274,7 @@ impl State for Game {
         };
 
         self.font.execute(move |font| {
-            let style = FontStyle::new(40.0, Color::WHITE);
+            let style = FontStyle::new(60.0, Color::WHITE);
             let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
             let image = font.render(&text, &style).unwrap();
             let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.8, view_rectangle.size().y / 10.0);
@@ -302,5 +302,10 @@ impl State for Game {
 }
 
 fn main() {
-    run::<Game>("Moon lander", Vector::new(800, 600), Settings::default());
+    let mut settings =  Settings::default();
+    settings.resize = ResizeStrategy::Fit;
+    settings.draw_rate = 30.0;
+    settings.fullscreen = true;
+
+    run::<Game>("Moon lander", Vector::new(2000, 1000), settings);
 }
