@@ -122,11 +122,20 @@ impl State for Game {
 
         self.font.execute(move |font| {
             if !started {
-                let style = FontStyle::new(60.0, Color::WHITE);
+                let style = FontStyle::new(60.0, Color::MAGENTA);
                 let text = "Welcome!\nUse WASD or arrow keys to control\nPress Space to star game";
                 let image = font.render(&text, &style).unwrap();
                 let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.2);
                 window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.5, 0.5)), 10);
+            }
+
+            // landed
+            if let LunarModuleState::Landed = game_state {
+                let style = FontStyle::new(60.0, Color::WHITE);
+                let text = "Congratulations!\nYou landed successfully\nPress R to restart game";
+                let image = font.render(&text, &style).unwrap();
+                let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.1);
+                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.2, 0.2)), 10);
             }
 
             let style = FontStyle::new(60.0, Color::WHITE);

@@ -124,11 +124,13 @@ impl Drawable for LunarModule {
         let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
         let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
 
-        let color = match self.state {
-            LunarModuleState::Flying => bkg,
-            LunarModuleState::Landed => Col(Color::GREEN),
-            LunarModuleState::Crashed(_) => Col(Color::RED),
-        };
+        // different colors were used for debug
+        // let color = match self.state {
+        //     LunarModuleState::Flying => bkg,
+        //     LunarModuleState::Landed => Col(Color::GREEN),
+        //     LunarModuleState::Crashed(_) => Col(Color::RED),
+        // };
+        let color = bkg;
 
         main_rect.draw(mesh, color, Transform::rotate(self.attitude) * trans, z);
         black_rect.draw(mesh, Col(Color::BLACK), Transform::rotate(self.attitude) * trans, z);
