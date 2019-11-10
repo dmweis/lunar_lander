@@ -81,7 +81,6 @@ impl LunarModule {
 
     pub fn check_collision(&mut self, map: &Map) {
         let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 4);
-        let main_rect = Rectangle::new(self.position + Vector::new(-5, -2), Vector::new(10, 4));
 
         // feet
         let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
@@ -90,7 +89,7 @@ impl LunarModule {
         let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
 
         for line in map.lines.iter() {
-            let colliding = top.intersects(&line) || main_rect.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
+            let colliding = top.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
             if colliding {
                 self.disable_thrust();
                 let attitude = (self.attitude % 360.0).abs();
