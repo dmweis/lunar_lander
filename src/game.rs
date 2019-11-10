@@ -62,12 +62,12 @@ impl State for Game {
                 self.lunar_module.desired_attitude += 2.5;
             }
             self.lunar_module.update_attitude();
-            if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down(){
+            if window.keyboard()[Key::Up].is_down() || window.keyboard()[Key::W].is_down() || window.keyboard()[Key::Space].is_down(){
                 self.lunar_module.apply_thrust();
             } else {
                 self.lunar_module.disable_thrust();
             }
-            if window.keyboard()[Key::Space].is_down() {
+            if window.keyboard()[Key::R].is_down() {
                 self.lunar_module.reset();
             }
             if window.keyboard()[Key::F] == ButtonState::Pressed {
@@ -109,7 +109,6 @@ impl State for Game {
 
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
-        let attitude = self.lunar_module.attitude;
         let game_state = self.lunar_module.state.clone();
         let started = self.started;
         let zoomed = match self.view_rectangle {
@@ -131,7 +130,7 @@ impl State for Game {
             }
 
             let style = FontStyle::new(60.0, Color::WHITE);
-            let text = format!("Horizontal: {:.0}\nVertical: {:.0}\nAttitude: {:.0}", horizontal, vertical, attitude);
+            let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
             let image = font.render(&text, &style).unwrap();
             let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.8, view_rectangle.size().y / 10.0);
             if zoomed {
@@ -142,7 +141,7 @@ impl State for Game {
             if let LunarModuleState::Crashed(reason) = game_state {
                 // Draw info screen
                 let style = FontStyle::new(60.0, Color::WHITE);
-                let text = "Game Over!\nUse WASD or arrow keys to control\nPress Space to restart game";
+                let text = "Game Over!\nUse WASD or arrow keys to control\nPress R to restart game";
                 let image = font.render(&text, &style).unwrap();
                 let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.5, view_rectangle.size().y * 0.1);
                 window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.2, 0.2)), 10);
