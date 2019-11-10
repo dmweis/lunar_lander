@@ -13,10 +13,10 @@ use crate::map::Map;
 pub struct LunarModule {
     pub velocity: Vector,
     pub position: Vector,
-    pub attitude: f32,
+    attitude: f32,
     pub desired_attitude: f32,
     pub state: LunarModuleState,
-    pub thruster_on: bool,
+    thruster_on: bool,
 }
 
 #[derive(Clone)]
@@ -82,9 +82,10 @@ impl LunarModule {
     pub fn check_collision(&mut self, map: &Map) {
         let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 4);
         let main_rect = Rectangle::new(self.position + Vector::new(-5, -2), Vector::new(10, 4));
+
+        // feet
         let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
         let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2)));
-
         let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
         let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
 
@@ -120,7 +121,6 @@ impl Drawable for LunarModule {
         // feet
         let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
         let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2)));
-
         let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
         let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
 
