@@ -30,7 +30,7 @@ impl State for Game {
         let map_message: MapMessage = serde_json::from_str(map_json).unwrap();
         let map = map_message.extract_map();
 
-        let font = Asset::new(Font::load("font.ttf"));
+        let font = Asset::new(Font::load("ShareTechMono-Regular.ttf"));
 
         Ok(Game {
             font: font,
