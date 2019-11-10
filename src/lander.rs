@@ -91,20 +91,18 @@ impl LunarModule {
         for line in map.lines.iter() {
             let colliding = top.intersects(&line) || main_rect.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
             if colliding {
-                if line.a.y == line.b.y && self.velocity.len() < 20.0 && (self.attitude < 15.0 || self.attitude > 350.0) {
-                    self.state = LunarModuleState::Landed;
-                    return;
-                } else {
-                    self.disable_thrust();
+                self.disable_thrust();
+                    let attitude = self.attitude % 360.0;
                     if line.a.y != line.b.y {
                         self.state = LunarModuleState::Crashed(CrashReason::SurfaceNotFlat(line.clone()));
                     } else if self.velocity.len() > 20.0 {
                         self.state = LunarModuleState::Crashed(CrashReason::VelocityTooHigh(self.velocity.clone()));
-                    } else if self.attitude > 15.0 || self.attitude < 350.0 {
-                        self.state = LunarModuleState::Crashed(CrashReason::AngleTooSteep(self.attitude));
+                    } else if attitude > 10.0 && attitude < 360.0 - 10.0 {
+                        self.state = LunarModuleState::Crashed(CrashReason::AngleTooSteep(attitude));
+                    } else {
+                        self.state = LunarModuleState::Landed;
                     }
                     return;
-                }
             }
         }
         self.state = LunarModuleState::Flying;
@@ -120,7 +118,6 @@ impl Drawable for LunarModule {
         let black_rect = Rectangle::new(self.position + Vector::new(-4, -1), Vector::new(8, 2));
 
         // feet
-
         let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
         let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2)));
 

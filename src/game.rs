@@ -37,7 +37,7 @@ impl State for Game {
             lunar_module: LunarModule::new(),
             map: map,
             view_rectangle: None,
-            fullscreen: false,
+            fullscreen: true,
             started: false,
         })
     }
@@ -109,6 +109,7 @@ impl State for Game {
 
         let horizontal = self.lunar_module.velocity.x;
         let vertical = self.lunar_module.velocity.y;
+        let attitude = self.lunar_module.attitude;
         let game_state = self.lunar_module.state.clone();
         let started = self.started;
         let zoomed = match self.view_rectangle {
@@ -130,7 +131,7 @@ impl State for Game {
             }
 
             let style = FontStyle::new(60.0, Color::WHITE);
-            let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
+            let text = format!("Horizontal: {:.0}\nVertical: {:.0}\nAttitude: {:.0}", horizontal, vertical, attitude);
             let image = font.render(&text, &style).unwrap();
             let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.8, view_rectangle.size().y / 10.0);
             if zoomed {
