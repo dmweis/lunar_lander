@@ -92,17 +92,17 @@ impl LunarModule {
             let colliding = top.intersects(&line) || main_rect.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
             if colliding {
                 self.disable_thrust();
-                    let attitude = self.attitude % 360.0;
-                    if line.a.y != line.b.y {
-                        self.state = LunarModuleState::Crashed(CrashReason::SurfaceNotFlat(line.clone()));
-                    } else if self.velocity.len() > 20.0 {
-                        self.state = LunarModuleState::Crashed(CrashReason::VelocityTooHigh(self.velocity.clone()));
-                    } else if attitude > 10.0 && attitude < 360.0 - 10.0 {
-                        self.state = LunarModuleState::Crashed(CrashReason::AngleTooSteep(attitude));
-                    } else {
-                        self.state = LunarModuleState::Landed;
-                    }
-                    return;
+                let attitude = self.attitude % 360.0;
+                if self.velocity.len() > 20.0 {
+                    self.state = LunarModuleState::Crashed(CrashReason::VelocityTooHigh(self.velocity.clone()));
+                } else if line.a.y != line.b.y {
+                    self.state = LunarModuleState::Crashed(CrashReason::SurfaceNotFlat(line.clone()));
+                } else if attitude > 10.0 && attitude < 360.0 - 10.0 {
+                    self.state = LunarModuleState::Crashed(CrashReason::AngleTooSteep(attitude));
+                } else {
+                    self.state = LunarModuleState::Landed;
+                }
+                return;
             }
         }
         self.state = LunarModuleState::Flying;
