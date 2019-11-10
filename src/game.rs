@@ -29,9 +29,7 @@ impl State for Game {
         let map_json = from_utf8(map_payload).unwrap();
         let map_message: MapMessage = serde_json::from_str(map_json).unwrap();
         let map = map_message.extract_map();
-
         let font = Asset::new(Font::load("ShareTechMono-Regular.ttf"));
-
         Ok(Game {
             font: font,
             lunar_module: LunarModule::new(),
@@ -43,6 +41,9 @@ impl State for Game {
     }
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
+        if window.keyboard()[Key::F] == ButtonState::Pressed {
+            self.fullscreen = !self.fullscreen;
+        }
         if window.get_fullscreen() != self.fullscreen {
             window.set_fullscreen(self.fullscreen);
         }
@@ -69,9 +70,6 @@ impl State for Game {
             }
             if window.keyboard()[Key::R].is_down() {
                 self.lunar_module.reset();
-            }
-            if window.keyboard()[Key::F] == ButtonState::Pressed {
-                self.fullscreen = !self.fullscreen;
             }
             self.lunar_module.check_collision(&self.map);
             if let LunarModuleState::Flying = self.lunar_module.state {
