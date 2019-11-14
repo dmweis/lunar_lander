@@ -8,7 +8,7 @@ use quicksilver::{
         Mesh,
     },
 };
-use std::time::Instant;
+use instant::Instant;
 
 use crate::map::Map;
 
