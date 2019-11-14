@@ -106,8 +106,7 @@ impl State for Game {
         window.draw(&self.map, Col(Color::WHITE));
         window.draw(&self.lunar_module, Color::WHITE);
 
-        let horizontal = self.lunar_module.velocity.x;
-        let vertical = self.lunar_module.velocity.y;
+        let velocity = self.lunar_module.velocity.clone();
         let game_state = self.lunar_module.state.clone();
         let started = self.started;
         let zoomed = match self.view_rectangle {
@@ -137,12 +136,14 @@ impl State for Game {
                 window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.2, 0.2)), 10);
             }
 
-            let style = FontStyle::new(60.0, Color::WHITE);
-            let text = format!("Horizontal: {:.0}\nVertical: {:.0}", horizontal, vertical);
+            // different colors were used for debug
+            let color = if velocity.len() > 20.0 {Color::RED} else {Color::WHITE};
+            let style = FontStyle::new(60.0, color);
+            let text = format!("Horizontal: {:.0}\nVertical: {:.0}", velocity.x, velocity.y);
             let image = font.render(&text, &style).unwrap();
             let text_point = view_rectangle.top_left() + Vector::new(view_rectangle.size().x * 0.8, view_rectangle.size().y / 10.0);
             if zoomed {
-                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.125, 0.125)), 10);
+                window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.16, 0.16)), 10);
             } else {
                 window.draw_ex(&image.area().with_center(text_point), Img(&image), Transform::scale(Vector::new(0.5, 0.5)), 10);
             }
