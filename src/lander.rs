@@ -10,12 +10,15 @@ use quicksilver::{
 };
 use crate::map::Map;
 
+const ZOOMED_SCALE: f32 = 0.6;
+
 pub struct LunarModule {
     pub velocity: Vector,
     pub position: Vector,
-    attitude: f32,
     pub desired_attitude: f32,
     pub state: LunarModuleState,
+    pub zoomed: bool,
+    attitude: f32,
     thruster_on: bool,
 }
 
@@ -42,6 +45,7 @@ impl LunarModule {
             desired_attitude: 90.0,
             state: LunarModuleState::Flying,
             thruster_on: true,
+            zoomed: false,
         }
     }
 
@@ -80,13 +84,14 @@ impl LunarModule {
     }
 
     pub fn check_collision(&mut self, map: &Map) {
-        let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 4);
-
+        let multiplier = if self.zoomed { ZOOMED_SCALE } else { 1.0 };
+        
+        let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6) * multiplier), 4.0 * multiplier);
         // feet
-        let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
-        let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2)));
-        let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
-        let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
+        let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2) * multiplier);
+        let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2) * multiplier));
+        let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2) * multiplier);
+        let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2) * multiplier));
 
         for line in map.lines.iter() {
             let colliding = top.intersects(&line) || left_leg_base.intersects(&line) || right_leg_base.intersects(&line);
@@ -111,17 +116,20 @@ impl LunarModule {
 
 impl Drawable for LunarModule {
     fn draw<'a>(&self, mesh: &mut Mesh, bkg: Background<'a>, trans: Transform, z: impl Scalar) {
-        let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 4);
-        let top_black = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6)), 3);
 
-        let main_rect = Rectangle::new(self.position + Vector::new(-5, -2), Vector::new(10, 4));
-        let black_rect = Rectangle::new(self.position + Vector::new(-4, -1), Vector::new(8, 2));
+        let multiplier = if self.zoomed { ZOOMED_SCALE } else { 1.0 };
+
+        let top = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6) * multiplier), 4.0 * multiplier);
+        let top_black = Circle::new(self.position + (Transform::rotate(self.attitude) * Vector::new(0, -6) * multiplier), 3.0 * multiplier);
+
+        let main_rect = Rectangle::new(self.position + Vector::new(-5, -2) * multiplier, Vector::new(10, 4) * multiplier);
+        let black_rect = Rectangle::new(self.position + Vector::new(-4, -1) * multiplier, Vector::new(8, 2) * multiplier);
 
         // feet
-        let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2));
-        let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2)));
-        let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2));
-        let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2)));
+        let bottom_left = self.position + (Transform::rotate(self.attitude) * Vector::new(-3, 2) * multiplier);
+        let left_leg_base = Line::new(bottom_left, bottom_left + (Transform::rotate(self.attitude) * Vector::new(-3, 2) * multiplier));
+        let bottom_right = self.position + (Transform::rotate(self.attitude) * Vector::new(3, 2) * multiplier);
+        let right_leg_base = Line::new(bottom_right, bottom_right + (Transform::rotate(self.attitude) * Vector::new(3, 2) * multiplier));
 
         // different colors were used for debug
         // let color = match self.state {
@@ -140,7 +148,7 @@ impl Drawable for LunarModule {
 
         if self.thruster_on {
             // Fire
-            let fire_dis = Transform::rotate(self.attitude) * Vector::new(0.0, 17.0 + rand::random::<f32>() * 6.0);
+            let fire_dis = Transform::rotate(self.attitude) * Vector::new(0.0, 17.0 + rand::random::<f32>() * 6.0) * multiplier;
             let left_fire = Line::new(bottom_left, fire_dis + self.position);
             let right_fire = Line::new(bottom_right, fire_dis + self.position);
             left_fire.draw(mesh, Col(Color::RED), trans, z);

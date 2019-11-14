@@ -90,6 +90,7 @@ impl State for Game {
                 break;
             }
         }
+        self.lunar_module.zoomed = detailed_view_needed;
         if !detailed_view_needed {
             self.view_rectangle = None;
             let screen_size = window.screen_size();
