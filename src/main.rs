@@ -15,5 +15,6 @@ fn main() {
     settings.resize = ResizeStrategy::Fit;
     settings.draw_rate = 30.0;
     settings.fullscreen = true;
+    settings.multisampling = Some(4);
     run::<Game>("Moon lander", Vector::new(1600, 800), settings);
 }

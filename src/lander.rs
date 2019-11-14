@@ -8,6 +8,8 @@ use quicksilver::{
         Mesh,
     },
 };
+use std::time::Instant;
+
 use crate::map::Map;
 
 const ZOOMED_SCALE: f32 = 0.6;
@@ -20,6 +22,7 @@ pub struct LunarModule {
     pub zoomed: bool,
     attitude: f32,
     thruster_on: bool,
+    thruster_on_time: Instant,
 }
 
 #[derive(Clone)]
@@ -46,6 +49,7 @@ impl LunarModule {
             state: LunarModuleState::Flying,
             thruster_on: true,
             zoomed: false,
+            thruster_on_time: Instant::now(),
         }
     }
 
@@ -56,6 +60,7 @@ impl LunarModule {
         self.desired_attitude = 90.0;
         self.state = LunarModuleState::Flying;
         self.thruster_on = true;
+        self.thruster_on_time = Instant::now();
     }
 
     pub fn update_attitude(&mut self) {
@@ -69,6 +74,9 @@ impl LunarModule {
             self.velocity = self
                     .velocity
                     .translate(Transform::rotate(self.attitude) * (Vector::new(0, -15) / 60.0));
+            if !self.thruster_on {
+                self.thruster_on_time = Instant::now();
+            }
             self.thruster_on = true;
         }
     }
@@ -147,8 +155,9 @@ impl Drawable for LunarModule {
         right_leg_base.draw(mesh, color, trans, z);
 
         if self.thruster_on {
+            let scale = (self.thruster_on_time.elapsed().as_secs_f32() * 4.0).min(1.0);
             // Fire
-            let fire_dis = Transform::rotate(self.attitude) * Vector::new(0.0, 17.0 + rand::random::<f32>() * 6.0) * multiplier;
+            let fire_dis = Transform::rotate(self.attitude) * Vector::new(0.0, 19.0 + rand::random::<f32>() * 4.0) * multiplier * scale;
             let left_fire = Line::new(bottom_left, fire_dis + self.position);
             let right_fire = Line::new(bottom_right, fire_dis + self.position);
             left_fire.draw(mesh, Col(Color::RED), trans, z);
