@@ -1,3 +1,4 @@
 before_install:
+  - sudo apt update
   - sudo apt install -y libudev-dev zlib1g-dev alsa libasound2-dev
 language: rust
