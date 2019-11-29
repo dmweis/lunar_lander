@@ -1,4 +1,5 @@
 # Lunar Lander
+[![Build Status](https://travis-ci.com/dmweis/lunar_lander.svg?branch=master)](https://travis-ci.com/dmweis/lunar_lander)
 
 Lunar Lander game written in rust with WebAssembly
 
